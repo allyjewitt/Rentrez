@@ -1,0 +1,109 @@
+---
+title: "Analysis"
+author: "Ally Jewitt"
+date: "2023-02-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE}
+library(Biostrings)
+```
+
+## Part I 
+
+[Link to GitHub](https://github.com/allyjewitt/Rentrez)
+
+Import the Sequences.csv file.
+
+```{r}
+Sequences<-read.csv("Sequences.csv", header=TRUE)
+BP<-Sequences[2,]
+```
+
+Count the number of each base pair (A, T, C and G), in each of the three sequences. 
+
+Print out the number of each nucleotide as a table for each of the three sequences.
+
+```{r}
+BPsplit <- strsplit(BP$x, " ")[[1]]
+a_counts <- sapply(gsub("[^A]", "", BPsplit), nchar)
+t_counts <- sapply(gsub("[^T]", "", BPsplit), nchar)
+c_counts <- sapply(gsub("[^C]", "", BPsplit), nchar)
+g_counts <- sapply(gsub("[^G]", "", BPsplit), nchar)
+
+counts <- matrix(c(a_counts, t_counts, c_counts, g_counts), ncol = 4, byrow = TRUE,
+                 dimnames = list(paste0("Sequence ", 1:length(BPsplit)),
+                                 c("A", "T", "C", "G")))
+
+print(counts)
+```
+
+Print out each sequence.
+
+```{r}
+print(BPsplit)
+```
+
+Include an image of a bacteria from the internet, and a link to the Wikipedia page about *Borrelia burgdorferi*.
+
+![*Borrelia burgdorferi*](Borrelia.jpeg)
+
+[*Borrelia burgdorferi* Wikipedia](https://en.wikipedia.org/wiki/Borrelia_burgdorferi)
+
+Calculate GC Content (% of nucleotides that are G or C) and create a final table showing GC content for each sequence ID.
+
+```{r}
+BPsplit <- strsplit(BP$x, " ")[[1]]
+GC_count <- sapply(gsub("[^G|C]", "", BPsplit), nchar)
+TOT_count<- nchar(BPsplit)
+GC_percent <- GC_count/TOT_count * 100
+
+GCpercent <- matrix(c(GC_percent), ncol = 1, byrow = TRUE)
+
+row_nam<- c("HQ433694.1","HQ433692.1","HQ433691.1")
+col_nam<- c("GC content")
+
+dimnames(GCpercent) <- list(row_nam, col_nam)
+print(GCpercent)
+```
+## Part II
+
+```{r}
+Seq <- "Human isolate unknown sequence GCCTGATGGAGGGGGATAACTACTGGAAACGGTAGCTAATACCGCATGACCTCGCAAGAGCAAAGTGGGGGACCTTAGGGCCTCACGCCATCGGATGAACCCAGATGGGATTAGCTAGTAGGTGGGGTAATGGCTCACCTAGGCGACGATCCCTAGCTGGTCTGAGAGGATGACCAGCCACACTGGAACTGAGACACGGTCCAGACTCCTACGGGAGGCAGCAGTGGGGAATATTGCACAATGGGCGCAA"
+```
+
+Write reproducible R code to search for the closest matching sequence on Genbank and generate an alignment to confirm the degree of similarity.
+
+```{r}
+library(annotate)
+SeqBlastDF<-blastSequences(paste(Seq), as='data.frame', hitListSize=5, timeout = 600)
+nrow(SeqBlastDF)
+```
+
+```{r}
+query_seq<-"GCCTGATGGAGGGGGATAACTACTGGAAACGGTAGCTAATACCGCATGACCTCGCAAGAGCAAAGTGGGGGACCTTAGGGCCTCACGCCATCGGATGAACCCAGATGGGATTAGCTAGTAGGTGGGGTAATGGCTCACCTAGGCGACGATCCCTAGCTGGTCTGAGAGGATGACCAGCCACACTGGAACTGAGACACGGTCCAGACTCCTACGGGAGGCAGCAGTGGGGAATATTGCACAATGGGCGCAA"
+alignment <- pairwiseAlignment(as.character(query_seq), as.character(SeqBlastDF$Hsp_qseq[1]), type = "global")
+print(alignment)
+```
+
+
+The unknown sequence seems to best match the *Yersinia pestis* species, which is a bacterium that causes Plague disease in humans and mammals. The alignment test show high degree of similarity between sequences, with a score of 495. This is something to be concerned about if it goes untreated; however antibiotics can effectively treat the disease. 
+
+The following table shows the top sequence matches to the human isolate unknown sequence: 
+```{r echo=FALSE}
+library(dplyr)
+blastres<-SeqBlastDF %>% select(Hit_def, Hsp_score)
+colnames(blastres)[1]  <- "Organism"   
+colnames(blastres)[2]  <- "Match Score" 
+head(blastres)
+```
+
+
+
+
+
+
